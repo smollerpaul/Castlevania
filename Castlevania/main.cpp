@@ -1,38 +1,64 @@
+
 #include <windows.h>
 #include <d3d9.h>
 #include <d3dx9.h>
 
-#include <signal.h>
-#include <string.h>
-#include <stdio.h>
-#include <stdarg.h>
-#include <time.h>
-#include <stdlib.h>
+#include "debug.h"
+#include "Game.h"
+#include "GameObject.h"
+#include "Textures.h"
+
+#include "Simon.h"
 
 #define WINDOW_CLASS_NAME L"SampleWindow"
 #define MAIN_WINDOW_TITLE L"CastleVania"
 
-#define BACKGROUND_TEXTURE_PATH L"Intro.png"
+#define BACKGROUND_COLOR D3DCOLOR_XRGB(200, 200, 255)
+#define SCREEN_WIDTH 500
+#define SCREEN_HEIGHT 300
 
+#define MAX_FRAME_RATE 90
 
-#define BACKGROUND_COLOR D3DCOLOR_XRGB(0, 0, 0)
-#define SCREEN_WIDTH 345
-#define SCREEN_HEIGHT 260
+#define ID_TEX_SIMON 0
+#define ID_TEX_ENEMY 10
+#define ID_TEX_MISC 20
 
-#define MAX_FRAME_RATE 10
+CGame *game;
+CSimon *simon;
 
+class CSampleKeyHander : public CKeyEventHandler
+{
+	virtual void KeyState(BYTE *states);
+	virtual void OnKeyDown(int KeyCode);
+	virtual void OnKeyUp(int KeyCode);
+};
 
-LPDIRECT3D9 d3d = NULL;						// Direct3D handle
-LPDIRECT3DDEVICE9 d3ddv = NULL;				// Direct3D device object
+CSampleKeyHander * keyHandler;
 
-LPDIRECT3DSURFACE9 backBuffer = NULL;
-LPD3DXSPRITE spriteHandler = NULL;			// Sprite helper library to help us draw 2D image on the screen 
+void CSampleKeyHander::OnKeyDown(int KeyCode)
+{
+	DebugOut(L"[INFO] KeyDown: %d\n", KeyCode);
+	switch (KeyCode)
+	{
+	case DIK_SPACE:
+		simon->SetState(SIMON_STATE_JUMP);
+		break;
+	}
+}
 
-LPDIRECT3DTEXTURE9 texBackground;				// texture object to store brick image
+void CSampleKeyHander::OnKeyUp(int KeyCode)
+{
+	DebugOut(L"[INFO] KeyUp: %d\n", KeyCode);
+}
 
-int background_x = 0;
-int background_y = 0;
-
+void CSampleKeyHander::KeyState(BYTE *states)
+{
+	if (game->IsKeyDown(DIK_RIGHT))
+		simon->SetState(SIMON_STATE_WALKING_RIGHT);
+	else if (game->IsKeyDown(DIK_LEFT))
+		simon->SetState(SIMON_STATE_WALKING_LEFT);
+	else simon->SetState(SIMON_STATE_IDLE);
+}
 
 LRESULT CALLBACK WinProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
@@ -47,94 +73,63 @@ LRESULT CALLBACK WinProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 	return 0;
 }
 
-void DebugOut(wchar_t *fmt, ...)
-{
-	va_list argp;
-	va_start(argp, fmt);
-	wchar_t dbg_out[4096];
-	vswprintf_s(dbg_out, fmt, argp);
-	va_end(argp);
-	OutputDebugString(dbg_out);
-}
-
-void InitDirectX(HWND hWnd)
-{
-	LPDIRECT3D9 d3d = Direct3DCreate9(D3D_SDK_VERSION);
-
-	D3DPRESENT_PARAMETERS d3dpp;
-
-	ZeroMemory(&d3dpp, sizeof(d3dpp));
-
-	d3dpp.Windowed = TRUE;
-	d3dpp.SwapEffect = D3DSWAPEFFECT_DISCARD;
-	d3dpp.BackBufferFormat = D3DFMT_X8R8G8B8;
-	d3dpp.BackBufferCount = 1;
-
-	RECT r;
-	GetClientRect(hWnd, &r);	// retrieve Window width & height 
-
-	d3dpp.BackBufferHeight = r.bottom + 1;
-	d3dpp.BackBufferWidth = r.right + 1;
-
-	d3d->CreateDevice(
-		D3DADAPTER_DEFAULT,
-		D3DDEVTYPE_HAL,
-		hWnd,
-		D3DCREATE_SOFTWARE_VERTEXPROCESSING,
-		&d3dpp,
-		&d3ddv);
-
-	if (d3ddv == NULL)
-	{
-		OutputDebugString(L"[ERROR] CreateDevice failed\n");
-		return;
-	}
-
-	d3ddv->GetBackBuffer(0, 0, D3DBACKBUFFER_TYPE_MONO, &backBuffer);
-
-	// Initialize sprite helper from Direct3DX helper library
-	D3DXCreateSprite(d3ddv, &spriteHandler);
-
-	OutputDebugString(L"[INFO] InitGame is done\n");
-
-}
-
 /*
-Load all game resources. In this example, only load brick image
+Load all game resources
+In this example: load textures, sprites, animations and simon object
 */
 void LoadResources()
 {
-	D3DXIMAGE_INFO info;
-	HRESULT result = D3DXGetImageInfoFromFile(BACKGROUND_TEXTURE_PATH, &info);
-	if (result != D3D_OK)
-	{
-		DebugOut(L"[ERROR] GetImageInfoFromFile failed: %s\n", BACKGROUND_TEXTURE_PATH);
-		return;
-	}
+	CTextures * textures = CTextures::GetInstance();
 
-	result = D3DXCreateTextureFromFileEx(
-		d3ddv,								// Pointer to Direct3D device object
-		BACKGROUND_TEXTURE_PATH,		    // Path to the image to load
-		info.Width,							// Texture width
-		info.Height,						// Texture height
-		1,
-		D3DUSAGE_DYNAMIC,
-		D3DFMT_UNKNOWN,
-		D3DPOOL_DEFAULT,
-		D3DX_DEFAULT,
-		D3DX_DEFAULT,
-		D3DCOLOR_XRGB(255, 255, 255),			// Transparent color
-		&info,
-		NULL,
-		&texBackground);								// Created texture pointer
+	textures->Add(ID_TEX_SIMON, L"textures\\simon.png", D3DCOLOR_XRGB(0, 0, 0));
 
-	if (result != D3D_OK)
-	{
-		OutputDebugString(L"[ERROR] CreateTextureFromFile failed\n");
-		return;
-	}
+	CSprites * sprites = CSprites::GetInstance();
+	CAnimations * animations = CAnimations::GetInstance();
 
-	DebugOut(L"[INFO] Texture loaded Ok: %s \n", BACKGROUND_TEXTURE_PATH);
+	LPDIRECT3DTEXTURE9 texsimon = textures->Get(ID_TEX_SIMON);
+
+
+	sprites->Add(10001, 139, 39, 184, 73, texsimon);
+
+	sprites->Add(10002, 200, 39, 221, 73, texsimon);
+	sprites->Add(10003, 238, 39, 264, 73, texsimon);
+
+	sprites->Add(10011, 118, 39, 147, 73, texsimon);
+
+	sprites->Add(10012, 78, 39, 104, 73, texsimon);
+	sprites->Add(10013, 36, 39, 65, 73, texsimon);
+
+
+	LPANIMATION ani;
+
+	ani = new CAnimation(100);	//100 o day la default time.
+	ani->Add(10001);
+	animations->Add(400, ani);
+
+	ani = new CAnimation(100);
+	ani->Add(10011);
+	animations->Add(401, ani);
+
+
+	ani = new CAnimation(100);
+	ani->Add(10001);
+	ani->Add(10002);
+	ani->Add(10003);
+	animations->Add(500, ani);
+
+	ani = new CAnimation(100);
+	ani->Add(10011);
+	ani->Add(10012);
+	ani->Add(10013);
+	animations->Add(501, ani);
+
+	simon = new CSimon();
+	CSimon::AddAnimation(400);		// idle right
+	CSimon::AddAnimation(401);		// idle left
+	CSimon::AddAnimation(500);		// walk right
+	CSimon::AddAnimation(501);		// walk left
+
+	simon->SetPosition(0.0f, 100.0f);
 }
 
 /*
@@ -143,6 +138,7 @@ dt: time period between beginning of last frame and beginning of this frame
 */
 void Update(DWORD dt)
 {
+	simon->Update(dt);
 }
 
 /*
@@ -150,15 +146,18 @@ Render a frame
 */
 void Render()
 {
+	LPDIRECT3DDEVICE9 d3ddv = game->GetDirect3DDevice();
+	LPDIRECT3DSURFACE9 bb = game->GetBackBuffer();
+	LPD3DXSPRITE spriteHandler = game->GetSpriteHandler();
+
 	if (d3ddv->BeginScene())
 	{
-		// Clear screen (back buffer) with a color
-		d3ddv->ColorFill(backBuffer, NULL, BACKGROUND_COLOR);
+		// Clear back buffer with a color
+		d3ddv->ColorFill(bb, NULL, BACKGROUND_COLOR);
 
 		spriteHandler->Begin(D3DXSPRITE_ALPHABLEND);
 
-		D3DXVECTOR3 p((float)background_x, (float)background_y, 0);
-		spriteHandler->Draw(texBackground, NULL, NULL, &p, D3DCOLOR_XRGB(255, 255, 255));
+		simon->Render();
 
 		spriteHandler->End();
 		d3ddv->EndScene();
@@ -241,6 +240,9 @@ int Run()
 		if (dt >= tickPerFrame)
 		{
 			frameStart = now;
+
+			game->ProcessKeyboard();
+
 			Update(dt);
 			Render();
 		}
@@ -254,7 +256,13 @@ int Run()
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow)
 {
 	HWND hWnd = CreateGameWindow(hInstance, nCmdShow, SCREEN_WIDTH, SCREEN_HEIGHT);
-	InitDirectX(hWnd);
+
+	game = CGame::GetInstance();
+	game->Init(hWnd);
+
+	keyHandler = new CSampleKeyHander();
+	game->InitKeyboard(keyHandler);
+
 
 	LoadResources();
 	Run();
