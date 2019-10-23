@@ -9,11 +9,15 @@
 #define SIMON_STATE_WALKING_RIGHT	100
 #define SIMON_STATE_WALKING_LEFT	200
 #define SIMON_STATE_JUMP			300
+#define SIMON_STATE_SIT             400
+
 
 #define SIMON_ANI_IDLE_RIGHT		0
 #define SIMON_ANI_IDLE_LEFT			1
 #define SIMON_ANI_WALKING_RIGHT		2
 #define SIMON_ANI_WALKING_LEFT		3
+#define SIMON_ANI_SIT_RIGHT        4
+#define SIMON_ANI_SIT_LEFT         5
 
 class CSimon : public CGameObject
 {
