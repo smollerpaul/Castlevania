@@ -20,7 +20,7 @@
 #define SCREEN_WIDTH 500
 #define SCREEN_HEIGHT 300
 
-#define MAX_FRAME_RATE 90
+#define MAX_FRAME_RATE 60
 
 #define ID_TEX_SIMON 0
 #define ID_TEX_ENEMY 10
@@ -46,7 +46,10 @@ void CSampleKeyHander::OnKeyDown(int KeyCode)
 	case DIK_SPACE:
 		simon->SetState(SIMON_STATE_JUMP);
 		break;
+	
 	}
+	
+
 }
 
 void CSampleKeyHander::OnKeyUp(int KeyCode)
@@ -60,8 +63,6 @@ void CSampleKeyHander::KeyState(BYTE *states)
 		simon->SetState(SIMON_STATE_WALKING_RIGHT);
 	else if (game->IsKeyDown(DIK_LEFT))
 		simon->SetState(SIMON_STATE_WALKING_LEFT);
-	else if (game->IsKeyDown(DIK_DOWN))
-		simon->SetState(SIMON_STATE_SIT);
 	else simon->SetState(SIMON_STATE_IDLE);
 }
 
@@ -122,13 +123,6 @@ void LoadResources()
 	sprites->Add(4, 78, 39, 104, 73, texsimon);
 	sprites->Add(5, 36, 39, 65, 73, texsimon);
 
-	sprites->Add(6, 274, 46, 294, 71, texsimon); //sit right
-
-	sprites->Add(7, 2, 46, 22, 71, texsimon); //sit left
-	
-
-	
-
 	LPANIMATION ani;
 
 	ani = new CAnimation(100);	
@@ -151,25 +145,13 @@ void LoadResources()
 	ani->Add(5);
 	animations->Add(501, ani);
 
-	ani = new CAnimation(100);
-	ani->Add(6);
-	ani->Add(0);
-	animations->Add(600, ani);
-
-	ani = new CAnimation(100);
-	ani->Add(7);
-	ani->Add(3);
-	animations->Add(601, ani);
-
-
+	
 
 	simon = new CSimon();
 	CSimon::AddAnimation(400);		// idle right
 	CSimon::AddAnimation(401);		// idle left
 	CSimon::AddAnimation(500);		// walk right
 	CSimon::AddAnimation(501);		// walk left
-	CSimon::AddAnimation(600);      // sit right
-	CSimon::AddAnimation(601);      // sit left
 
 	simon->SetPosition(0.0f, 100.0f);
 }
