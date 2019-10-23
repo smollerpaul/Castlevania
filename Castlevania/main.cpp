@@ -10,6 +10,9 @@
 
 #include "Simon.h"
 
+#include <fstream>
+#include <vector>
+
 #define WINDOW_CLASS_NAME L"SampleWindow"
 #define MAIN_WINDOW_TITLE L"CastleVania"
 
@@ -57,6 +60,8 @@ void CSampleKeyHander::KeyState(BYTE *states)
 		simon->SetState(SIMON_STATE_WALKING_RIGHT);
 	else if (game->IsKeyDown(DIK_LEFT))
 		simon->SetState(SIMON_STATE_WALKING_LEFT);
+	else if (game->IsKeyDown(DIK_DOWN))
+		simon->SetState(SIMON_STATE_SIT);
 	else simon->SetState(SIMON_STATE_IDLE);
 }
 
@@ -88,46 +93,83 @@ void LoadResources()
 
 	LPDIRECT3DTEXTURE9 texsimon = textures->Get(ID_TEX_SIMON);
 
+	//vector<int> arr;
 
-	sprites->Add(10001, 139, 39, 184, 73, texsimon);
+	//ifstream File;
+	//File.open("coords.txt");
 
-	sprites->Add(10002, 200, 39, 221, 73, texsimon);
-	sprites->Add(10003, 238, 39, 264, 73, texsimon);
+	//int n;
+	//while (File >> n) {
+	//	arr.push_back(n);
+	//}
+	//File.close();
 
-	sprites->Add(10011, 118, 39, 147, 73, texsimon);
+	//int j = 0;
+	//for (int i = 0; i < arr.size(); i = i + 4)
+	//{
+	//	sprites->Add(j, arr.at(i), arr.at(i + 1), arr.at(i + 2), arr.at(i + 3), texsimon);
+	//	j++;
+	//}
 
-	sprites->Add(10012, 78, 39, 104, 73, texsimon);
-	sprites->Add(10013, 36, 39, 65, 73, texsimon);
 
+	sprites->Add(0, 141, 39, 184, 73, texsimon);
+
+	sprites->Add(1, 202, 39, 221, 73, texsimon);
+	sprites->Add(2, 239, 39, 264, 73, texsimon);
+
+	sprites->Add(3, 118, 39, 147, 73, texsimon);
+
+	sprites->Add(4, 78, 39, 104, 73, texsimon);
+	sprites->Add(5, 36, 39, 65, 73, texsimon);
+
+	sprites->Add(6, 274, 46, 294, 71, texsimon); //sit right
+
+	sprites->Add(7, 2, 46, 22, 71, texsimon); //sit left
+	
+
+	
 
 	LPANIMATION ani;
 
-	ani = new CAnimation(100);	//100 o day la default time.
-	ani->Add(10001);
+	ani = new CAnimation(100);	
+	ani->Add(0);
 	animations->Add(400, ani);
 
 	ani = new CAnimation(100);
-	ani->Add(10011);
+	ani->Add(3);
 	animations->Add(401, ani);
 
-
 	ani = new CAnimation(100);
-	ani->Add(10001);
-	ani->Add(10002);
-	ani->Add(10003);
+	ani->Add(0);
+	ani->Add(1);
+	ani->Add(2);
 	animations->Add(500, ani);
 
 	ani = new CAnimation(100);
-	ani->Add(10011);
-	ani->Add(10012);
-	ani->Add(10013);
+	ani->Add(3);
+	ani->Add(4);
+	ani->Add(5);
 	animations->Add(501, ani);
+
+	ani = new CAnimation(100);
+	ani->Add(6);
+	ani->Add(0);
+	animations->Add(600, ani);
+
+	ani = new CAnimation(100);
+	ani->Add(7);
+	ani->Add(3);
+	animations->Add(601, ani);
+
+
 
 	simon = new CSimon();
 	CSimon::AddAnimation(400);		// idle right
 	CSimon::AddAnimation(401);		// idle left
 	CSimon::AddAnimation(500);		// walk right
 	CSimon::AddAnimation(501);		// walk left
+	CSimon::AddAnimation(600);      // sit right
+	CSimon::AddAnimation(601);      // sit left
 
 	simon->SetPosition(0.0f, 100.0f);
 }
