@@ -12,7 +12,7 @@ void CSimon::Update(DWORD dt)
 	}
 
 	// simple screen edge collision!!!
-	if (vx > 0 && x > 470) x = 0;
+	if (vx > 0 && x > 290) x = 290;
 	if (vx < 0 && x < 0) x = 0;
 }
 
@@ -21,16 +21,8 @@ void CSimon::Render()
 	int ani;
 	if (vx == 0)
 	{
-		if (this->GetState() == SIMON_STATE_SIT)
-		{
-			 if(nx > 0) ani = SIMON_ANI_SIT_RIGHT;
-			 else ani = SIMON_ANI_SIT_LEFT;
-		}
-		else
-		{
-			if(nx > 0) ani = SIMON_ANI_IDLE_RIGHT;
-			else ani = SIMON_ANI_IDLE_LEFT;
-		}
+		if (nx>0) ani = SIMON_ANI_IDLE_RIGHT;
+		else ani = SIMON_ANI_IDLE_LEFT;
 	}
 	else if (vx > 0)
 		ani = SIMON_ANI_WALKING_RIGHT;
@@ -55,9 +47,7 @@ void CSimon::SetState(int state)
 	case SIMON_STATE_JUMP:
 		if (y == 100)
 			vy = -SIMON_JUMP_SPEED_Y;
-	case SIMON_STATE_SIT:
-		vx = 0;
-		break;
+
 	case SIMON_STATE_IDLE:
 		vx = 0;
 		break;
